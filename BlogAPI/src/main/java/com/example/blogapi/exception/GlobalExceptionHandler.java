@@ -1,0 +1,89 @@
+package com.example.blogapi.exception;
+
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
+import com.example.blogapi.payload.ErrorDetails;
+
+@ControllerAdvice  //to handle exception globally
+public class GlobalExceptionHandler extends ResponseEntityExceptionHandler{
+	
+	//handle specific exception
+	@ExceptionHandler(ResourceNotFoundException.class)
+	public ResponseEntity<ErrorDetails> handleResourceNotFoundException(ResourceNotFoundException exception, WebRequest webRequest){
+		ErrorDetails errorDetails = new ErrorDetails(new Date(), exception.getMessage(), webRequest.getDescription(false));
+		//not going to send whole web request to the client we only send the url so here taken as false
+		
+		return new ResponseEntity<>(errorDetails, HttpStatus.NOT_FOUND);
+	}
+	
+	@ExceptionHandler(BlogAPIException.class)
+	public ResponseEntity<ErrorDetails> handleBlogAPIException(BlogAPIException exception, WebRequest webRequest){
+		ErrorDetails errorDetails = new ErrorDetails(new Date(), exception.getMessage(), webRequest.getDescription(false));
+		//not going to send whole web request to the client we only send the url so here taken as false
+		
+		return new ResponseEntity<>(errorDetails, HttpStatus.BAD_REQUEST);
+	}
+	
+	
+	//handle global exception
+	@ExceptionHandler(Exception.class)
+	public ResponseEntity<ErrorDetails> handleGlobalException(Exception exception, WebRequest webRequest){
+		ErrorDetails errorDetails = new ErrorDetails(new Date(), exception.getMessage(), webRequest.getDescription(false));
+		//not going to send whole web request to the client we only send the url so here taken as false
+		
+		return new ResponseEntity<>(errorDetails, HttpStatus.INTERNAL_SERVER_ERROR);
+	}
+	
+	//first approach
+	@Override
+	protected ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex,
+			HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+		// TODO Auto-generated method stub
+		
+		Map<String, String> errors = new HashMap<>();
+		ex.getBindingResult().getAllErrors().forEach((error) -> {
+			String fieldName = ((FieldError)error).getField();
+			String message = error.getDefaultMessage();
+			errors.put(fieldName, message);
+		});;
+ 		return new ResponseEntity<Object>(errors, HttpStatus.BAD_REQUEST);
+	}
+	
+	//second appraoch
+/*	@ExceptionHandler(MethodArgumentNotValidException.class)
+	public ResponseEntity<Object> handleMethodArgumentNotValidException(MethodArgumentNotValidException exception, WebRequest webRequest){
+		//not going to send whole web request to the client we only send the url so here taken as false
+		
+		Map<String, String> errors = new HashMap<>();
+		exception.getBindingResult().getAllErrors().forEach((error) -> {
+			String fieldName = ((FieldError)error).getField();
+			String message = error.getDefaultMessage();
+			errors.put(fieldName, message);
+		});;
+		return new ResponseEntity<>(errors, HttpStatus.BAD_REQUEST);
+	}  */
+	
+	//handle specific exception basically occurs from spring security
+		@ExceptionHandler(AccessDeniedException.class)
+		public ResponseEntity<ErrorDetails> handleAccessDeniedException(AccessDeniedException exception, WebRequest webRequest){
+			ErrorDetails errorDetails = new ErrorDetails(new Date(), exception.getMessage(), webRequest.getDescription(false));
+			//not going to send whole web request to the client we only send the url so here taken as false
+			
+			return new ResponseEntity<>(errorDetails, HttpStatus.UNAUTHORIZED);
+		}
+	
+}
